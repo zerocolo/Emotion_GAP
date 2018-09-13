@@ -9,7 +9,7 @@ from torch.nn import functional as F
 
 from PIL import Image
 
-Img = '0003'
+Img = '0722'
 
 class FeatureExtractor(nn.Module):
     def __init__(self, submodule, extracted_layers):
@@ -34,7 +34,8 @@ def returnCAM(feature_conv, weight_softmax, class_idx):
     bz, nc, h, w = feature_conv.shape
     output_cam = []
 
-    for idx in class_idx:
+    for idx in class_idx[0]:
+
         cam = weight_softmax[idx].dot(feature_conv.reshape((nc, h*w)))
         cam = cam.reshape(h, w)
         cam = cam - np.min(cam)
@@ -95,11 +96,15 @@ idx = idx.numpy()
 for i in range(0, 6):
     print('{:.3f} -> {}'.format(probs[i], classes[idx[i]]))
 
-CAMs = returnCAM(x[0].detach().numpy(), weight_softmax, [idx[0]])
+CAMs = returnCAM(x[0].detach().numpy(), weight_softmax, [idx])
 
-print('output CAM.jpg for the top1 prediction: %s'%classes[idx[0]])
+print('output CAM.jpg for the top1 prediction: %s' %classes[idx[0]])
 img = cv2.imread(Img + '.jpg')
 height, width, _ = img.shape
-heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
-result = heatmap * 0.3 + img * 0.5
-cv2.imwrite(Img + 'Resnet101.jpg', result)
+
+for i in range(6):
+    heatmap = cv2.applyColorMap(cv2.resize(CAMs[i], (width, height)), cv2.COLORMAP_JET)
+    result = heatmap * 0.3 + img * 0.5
+    cv2.imwrite(Img + classes[idx[i]] + '.jpg', result)
+
+
